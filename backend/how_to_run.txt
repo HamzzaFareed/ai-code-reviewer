@@ -1,0 +1,60 @@
+==============================================
+AI CODE REVIEWER — HOW TO RUN (READ THIS)
+==============================================
+
+FIRST TIME SETUP (only do this once)
+--------------------------------------
+1. Make sure Python 3.11+ is installed
+2. Make sure Node.js 18+ is installed
+3. Make sure Git is installed
+
+EVERY TIME YOU WANT TO RUN THE PROJECT
+----------------------------------------
+You need 2 terminals open at the same time.
+
+TERMINAL 1 — Start the backend server:
+   cd C:\Users\LENOVO\Desktop\ai-code-reviewer\ai-code-reviewer\backend
+   venv\Scripts\activate
+   uvicorn app.main:app --reload --port 8000
+
+   You should see:
+   "Uvicorn running on http://127.0.0.1:8000"
+
+TERMINAL 2 — Start the public tunnel (ngrok):
+   ngrok http 8000
+
+   You should see a forwarding URL like:
+   https://xxxx.ngrok-free.app -> http://localhost:8000
+
+IMPORTANT NOTES
+----------------
+- ngrok gives a NEW URL every time you restart it
+- When ngrok URL changes, go to GitHub repo Settings ->
+  Webhooks -> Edit -> update the Payload URL to the new one
+  Full URL format:
+  https://YOUR-NGROK-URL.ngrok-free.app/api/v1/webhook/github
+
+- Your .env file must have these filled in:
+  GITHUB_WEBHOOK_SECRET=dummy_secret_123
+  GITHUB_TOKEN=your_github_token
+  HF_TOKEN=your_hf_token
+  GROQ_API_KEY=your_groq_key
+
+- .env file lives at:
+  ai-code-reviewer\ai-code-reviewer\backend\.env
+
+TESTING IT WORKS
+-----------------
+1. Both terminals running (uvicorn + ngrok)
+2. Open a PR on github.com/HamzzaFareed/ai-code-reviewer
+3. Watch Terminal 1 for:
+   [PR #X] Review done — X issue(s) found
+   [PR #X] Review complete!
+4. Check the PR on GitHub for AI comments
+
+SWAGGER UI (test your API)
+---------------------------
+While uvicorn is running, open:
+http://127.0.0.1:8000/docs
+
+==============================================

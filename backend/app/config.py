@@ -2,7 +2,6 @@ from pydantic_settings import BaseSettings
 from pydantic import Field
 from functools import lru_cache
 from pathlib import Path
-import os
 
 class Settings(BaseSettings):
     # GitHub
@@ -10,8 +9,8 @@ class Settings(BaseSettings):
     github_token: str
 
     # LLM
-    hf_token: str = "dummy"
-    llm_model_name: str = Field("Qwen/Qwen2.5-Coder-7B-Instruct", alias="MODEL_NAME")
+    hf_token: str = ""
+    llm_model_name: str = Field("llama3-8b-8192", alias="MODEL_NAME")
 
     # Groq
     groq_api_key: str = ""

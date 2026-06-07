@@ -1,11 +1,6 @@
 import json
 import httpx
-import os
-from typing import Optional
 from dataclasses import dataclass, field
-from app.core.context_builder import CodeContext
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")  
 
 
 @dataclass
@@ -42,7 +37,6 @@ class ReviewResult:
         for c in self.comments:
             emoji = emoji_map.get(c.severity, "⚪")
             lines.append(f"| {emoji} {c.severity} | `{c.file_path}:{c.line_number}` | {c.title} |")
-
         lines += ["", "---", "*Powered by AI Code Review Agent*"]
         return "\n".join(lines)
 
@@ -83,7 +77,7 @@ Rules:
 """
 
 
-def build_review_prompt(contexts: list[CodeContext]) -> str:
+def build_review_prompt(contexts) -> str:
     parts = ["Please review the following code changes:\n"]
     for i, ctx in enumerate(contexts, 1):
         parts.append(f"## Change {i}")
@@ -98,7 +92,6 @@ def parse_llm_response(response_text: str) -> tuple[str, list[dict]]:
     if text.startswith("```"):
         lines = text.split("\n")
         text = "\n".join(lines[1:-1])
-
     try:
         data = json.loads(text)
         return data.get("summary", ""), data.get("comments", [])
@@ -111,23 +104,32 @@ def parse_llm_response(response_text: str) -> tuple[str, list[dict]]:
 class ReviewEngine:
 
     def __init__(self):
-        self.groq_api_key = GROQ_API_KEY
+        from app.config import get_settings
+        s = get_settings()
+        self.groq_api_key = s.groq_api_key
+        self.model_name = "llama-3.1-8b-instant"
+        print(f"[DEBUG] Groq key loaded: {self.groq_api_key[:10]}...")
+        print(f"[DEBUG] Model: {self.model_name}")
 
     async def call_llm(self, prompt: str) -> str:
+        from app.config import get_settings
+        s = get_settings()
+
         payload = {
-            "model": "llama-3.3-70b-versatile",
+            "model": "llama-3.1-8b-instant",
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.2,
             "max_tokens": 1500,
+            "response_format": {"type": "json_object"},
         }
 
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {self.groq_api_key}"},
+                headers={"Authorization": f"Bearer {s.groq_api_key}"},
                 json=payload
             )
             if response.status_code != 200:
@@ -135,13 +137,7 @@ class ReviewEngine:
             result = response.json()
             return result["choices"][0]["message"]["content"]
 
-    async def review(
-        self,
-        contexts: list[CodeContext],
-        pr_number: int,
-        repo: str
-    ) -> ReviewResult:
-
+    async def review(self, contexts, pr_number: int, repo: str) -> ReviewResult:
         if not contexts:
             return ReviewResult(
                 pr_number=pr_number,
@@ -153,7 +149,6 @@ class ReviewEngine:
         print(f"[PR #{pr_number}] Calling LLM with {len(contexts)} context(s)...")
 
         raw_response = await self.call_llm(prompt)
-        print(f"[PR #{pr_number}] LLM responded!")
         summary, raw_comments = parse_llm_response(raw_response)
 
         comments = []

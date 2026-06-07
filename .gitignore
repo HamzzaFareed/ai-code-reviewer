@@ -1,22 +1,14 @@
-# Python
+# Secrets — NEVER commit these
+.env
 venv/
 __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
-
-# Env secrets
-.env
-
-# ML models (too large for git)
+models/
 *.bin
 *.safetensors
-models/
-
-# Node
 node_modules/
 .next/
-
-# OS
 .DS_Store
 Thumbs.db
